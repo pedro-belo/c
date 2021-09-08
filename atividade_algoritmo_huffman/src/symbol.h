@@ -12,15 +12,7 @@
 #include "./list.h"
 #include "./tree.h"
 
-struct SymbolConfig {
-    BOOL show_code;
-    BOOL show_fabs;
-    BOOL show_frel;
-};
-
 struct Symbol{
-
-    struct SymbolConfig config;
 
     // Frequência absoluta
     uint_t freq_abs[FREQ_SZ];
@@ -48,10 +40,7 @@ void set_freq_abs(BYTE symb, uint_t fab);
 Symbol *symbol_instance();
 void symbol_destroy();
 THuffman *grow();
-void print_fa();
-void print_fr();
-void print_far();
-
+void print_symbol(BOOL symb, BOOL freq_abs, BOOL freq_rel, BOOL ascii_code, BOOL huffman_code);
 void print_short_table_code(THuffman *th);
 void print_full_table_code();
 void create_table_code(THuffman *th);

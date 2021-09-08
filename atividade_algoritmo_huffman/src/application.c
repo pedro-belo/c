@@ -33,14 +33,13 @@ Application *initialize(int argc, char **argv) {
 
     app->args._fa = False;
     app->args._fr = False;
-    app->args._far = False;
-    app->args._ts = False;
-    app->args._tf = False;
-    app->args._d = False;
+    app->args._ac = False;
+    app->args._bc = False;
+    app->args._hc = False;
     app->args._s = False;
     app->args._c = False;
+    app->args._d = False;
     app->args._h = False;
-    app->args._dbg = False;
 
     app->run_help = &help_text;
     app->run_compress = &run_compress;
@@ -66,7 +65,7 @@ int get_option() {
     if(app_instance()->args._c)
         return COMPRESS;
 
-    return -1;
+    return HELP;
 }
 
 
@@ -81,6 +80,8 @@ static void run_symbol_list(){
     uint_t length;
     BYTE *buffer = read_file(app_instance()->args.in_filename, &length);
 
+    THuffman *th = NULL;
+
     if(!buffer){
         fprintf(stderr, "Arquivo '%s' não foi encontrado.\n", app_instance()->args.in_filename);
         exit(R_ERROR);
@@ -88,16 +89,30 @@ static void run_symbol_list(){
 
     create_symbol(buffer, length);
 
-    if(app_instance()->args._far)
-        print_far();
+    th = grow();
+    create_table_code(th);
 
-    else if(app_instance()->args._fr)
-        print_fr();
+    BOOL all = True;
+    BOOL symb = False,
+         freq_abs = False,
+         freq_rel = False,
+         ascii_code = False,
+         huffman_code = False;
 
-    else if(app_instance()->args._fa)
-        print_fa();
+    if(app_instance()->args._hc){ symb = True; all = False; }
     
-    else print_far();
+    if(app_instance()->args._fa){ freq_abs = True; all = False; }
+
+    if(app_instance()->args._fr){ freq_rel = True; all = False; }
+
+    if(app_instance()->args._ac){ ascii_code = True; all = False; }
+
+    if(app_instance()->args._bc){ huffman_code = True; all = False; }
+
+    if(all)
+        symb = freq_abs = freq_rel = ascii_code = huffman_code = True;
+
+    print_symbol(symb, freq_abs, freq_rel, ascii_code, huffman_code);
 
     symbol_destroy();
     free(buffer);
@@ -125,12 +140,6 @@ static void run_compress(){
     th = grow();
 
     create_table_code(th);
-
-    if(app_instance()->args._tf)
-        print_full_table_code();
-
-    if(app_instance()->args._ts)
-        print_short_table_code(th);
 
     encode(
         buffer, length,
@@ -171,12 +180,6 @@ static void run_decompress(){
 
     create_table_code(th);
 
-    if(app_instance()->args._tf)
-        print_full_table_code();
-
-    if(app_instance()->args._ts)
-        print_short_table_code(th);
-
     decode(
         th, pn,
         app_instance()->args.out_filename ?
@@ -196,6 +199,7 @@ static void help_text() {
     fprintf(stdout, "\t-d Realiza a descompressão\n");
     fprintf(stdout, "\t-s Realiza apenas a análise de frequência e imprime a tabela de símbolos\n");
     fprintf(stdout, "\t-f <file> Indica o arquivo a ser processado (comprimido, descomprimido ou para apresentar a tabela de símbolos)\n");
+    fprintf(stdout, "\t-o <filename> Arquvi de saída\n");
 }
 
 static void read_cmd_args(int argc, char **argv) {
@@ -229,15 +233,13 @@ static void read_cmd_args(int argc, char **argv) {
         if(strcmp(argv[i], "-c") == 0) app_instance()->args._c = True;
         if(strcmp(argv[i], "-d") == 0) app_instance()->args._d = True;
         if(strcmp(argv[i], "-s") == 0) app_instance()->args._s = True;
-        if(strcmp(argv[i], "-h") == 0) app_instance()->args._h = True;
+        if(strcmp(argv[i], "-h") == 0) app_instance()->args._s = True;
+
         if(strcmp(argv[i], "-fa") == 0) app_instance()->args._fa = True;
         if(strcmp(argv[i], "-fr") == 0) app_instance()->args._fr = True;
-        if(strcmp(argv[i], "-far") == 0) app_instance()->args._far = True;
-        if(strcmp(argv[i], "-ts") == 0) app_instance()->args._ts = True;
-        if(strcmp(argv[i], "-tf") == 0) app_instance()->args._tf = True;
-        #ifdef DEBUG
-            if(strcmp(argv[i], "-dbg") == 0) app_instance()->args._dbg = True;
-        #endif
+        if(strcmp(argv[i], "-bc") == 0) app_instance()->args._bc = True;
+        if(strcmp(argv[i], "-ac") == 0) app_instance()->args._ac = True;
+        if(strcmp(argv[i], "-hc") == 0) app_instance()->args._hc = True;
 
     }
 

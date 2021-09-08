@@ -2,9 +2,6 @@
 
 // Prototypes
 static void load_freq(BYTE *buffer, size_t len);
-static void _print_full_table_code();
-static void _print_short_table_code(THuffman *th, char fmt);
-static void print_symbol();
 static void reset_symbol();
 static void _load_freq_abs(BYTE *buffer, size_t len);
 static void _load_freq_rel();
@@ -87,30 +84,76 @@ THuffman *grow() {
     return th;
 }
 
-void print_fa(){
-    symbol_instance()->config.show_fabs = True;
-    symbol_instance()->config.show_frel = False;
-    print_symbol();
-}
+void print_symbol(BOOL symb, BOOL freq_abs, BOOL freq_rel, BOOL ascii_code, BOOL huffman_code) {   
 
-void print_far(){
-    symbol_instance()->config.show_fabs = True;
-    symbol_instance()->config.show_frel = True;
-    print_symbol();
-}
+    fprintf(stdout, "|");
+    if(symb) fprintf(stdout, "---------");
+    if(freq_abs) fprintf(stdout, "----------------");
+    if(freq_rel) fprintf(stdout, "-----------");
+    if(ascii_code) fprintf(stdout, "-------------");
+    if(huffman_code) fprintf(stdout, "-------------");
+    fprintf(stdout, "\n");
 
-void print_fr(){
-    symbol_instance()->config.show_fabs = False;
-    symbol_instance()->config.show_frel = True;
-    print_symbol();
-}
+    fprintf(stdout, "|");
+    if(symb) fprintf(stdout, " SYMBOL |");
+    if(freq_abs) fprintf(stdout, "   FREQ. ABS  |");
+    if(freq_rel) fprintf(stdout, " FREQ REL  |");
+    if(ascii_code) fprintf(stdout, " ASCII CODE |");
+    if(huffman_code) fprintf(stdout, " HUFFMAN CODE");
+    fprintf(stdout, "\n");
 
-void print_short_table_code(THuffman *th){
-    _print_short_table_code(th, 'x');
-}
+    for (size_t index = 0; index < FREQ_SZ ; index++) {
 
-void print_full_table_code() {
-    _print_full_table_code();
+        if(symbol_instance()->freq_abs[index] == 0)
+            continue;
+
+        fprintf(stdout, "|");
+        if(symb) fprintf(stdout, "  %#4lx  |", index);
+        if(freq_abs) fprintf(stdout, " %12d |", symbol_instance()->freq_abs[index]);
+        if(freq_rel) fprintf(stdout, "    %4.3f  |", symbol_instance()->freq_rel[index]);
+        
+        if(ascii_code){
+
+            if(index >= 32 && index <= 126)
+                fprintf(stdout, "    '%c'     | ", (char)index);
+            else
+                switch (index) {
+                case 0:
+                    fprintf(stdout, "    \\0      | ");
+                    break;
+                
+                case 9:
+                    fprintf(stdout, "    \\t      | ");
+                    break;
+                
+                case 10:
+                    fprintf(stdout, "    \\n      | ");
+                    break;
+
+                case 13:
+                    fprintf(stdout, "    \\b      | ");
+                    break;
+
+                    default: fprintf(stdout, "     .      | ");
+                }
+
+        }
+                
+
+        if(huffman_code){
+            for (size_t bit = 0; bit < symbol_instance()->total_bits[index] ; bit++)
+                printf("%d", symbol_instance()->table_code[index][bit]);            
+        } fprintf(stdout, "\n");
+
+    }
+    fprintf(stdout, "|");
+    if(symb) fprintf(stdout, "---------");
+    if(freq_abs) fprintf(stdout, "----------------");
+    if(freq_rel) fprintf(stdout, "-----------");
+    if(ascii_code) fprintf(stdout, "-------------");
+    if(huffman_code) fprintf(stdout, "-------------");
+    fprintf(stdout, "\n");
+
 }
 
 void create_table_code(THuffman *th){
@@ -142,96 +185,6 @@ void create_table_code(THuffman *th){
 }
 
 // Static Functions
-static void _print_full_table_code() {
-
-    fprintf(stdout, "!-------------[TABLE CODE - F]-------------!\n");
-    for (size_t index = 0; index < FREQ_SZ ; index++ ) {
-        
-        if(symbol_instance()->freq_abs[index] == 0)
-            continue;
-
-        fprintf(stdout, "CODE[%3.ld]=", index);
-        for (size_t pos = 0; pos < sizeof(uint_t) * 8 ; pos++ ) {
-            fprintf(stdout, "%d", symbol_instance()->table_code[index][pos]);
-        }
-        fprintf(stdout, "\n");
-    }
-    fprintf(stdout, "!-------------------------------------------!\n\n");
-}
-
-static void _print_short_table_code(THuffman *th, char fmt) {
-
-    TNode *node = NULL;
-
-    fprintf(stdout, "!-------------[TABLE CODE - S]-------------!\n");
-    for (size_t index = 0; index < FREQ_SZ ; index++ ) {
-
-        if(symbol_instance()->freq_abs[index] == 0)
-            continue;
-
-        switch (fmt) {
-            case 'x': fprintf(stdout, "CODE[%#lx]=", index);
-                break;
-            
-            case 'i': fprintf(stdout, "CODE[%ld]=", index);
-                break;
-
-            case 's': default:
-                fprintf(stdout, "CODE[%c]=", (BYTE)index);
-                break;
-        }
-
-        node = get_leaf(th, index);
-
-        for (size_t bit = 0; node != th->root ; bit++ ) {
-            fprintf(stdout, "%d", node->edge);
-            node = node->father;
-        }
-        fprintf(stdout, "\n");
-    }
-    fprintf(stdout, "!-------------------------------------------!\n\n");
-}
-
-static void print_symbol() {
-
-    fprintf(stdout, "\n#--------------[FREQUENCE TABLE]---------------#\n");
-
-    for (size_t index = 0;  index < FREQ_SZ ;  index++ ){
-
-        if(symbol_instance()->freq_abs[index] == 0)
-            continue;        
-
-        fprintf(stdout, "CODE: %#lx\n", index);
-
-        switch(index){
-
-            case '\n':
-                if(symbol_instance()->config.show_fabs) fprintf(stdout, "FA(\\n) = %d\n", symbol_instance()->freq_abs[index]);
-                if(symbol_instance()->config.show_frel) fprintf(stdout, "FR(\\n) = %.6f (%.6f %%)\n", symbol_instance()->freq_rel[index], symbol_instance()->freq_rel[index]*100);
-                break;
-
-            case '\t':
-                if(symbol_instance()->config.show_fabs) fprintf(stdout, "FA(\\n) = %d\n", symbol_instance()->freq_abs[index]);
-                if(symbol_instance()->config.show_frel) fprintf(stdout, "FR(\\t) = %.6f (%.6f %%)\n", symbol_instance()->freq_rel[index], symbol_instance()->freq_rel[index]*100);
-                break;
-
-            default:
-                if( index >= 0x20 && index <= 0x7E ){
-                    if(symbol_instance()->config.show_fabs) fprintf(stdout, "FA(%c) = %d\n", (char)index , symbol_instance()->freq_abs[index]);
-                    if(symbol_instance()->config.show_frel) fprintf(stdout, "FR(%c) = %.6f (%.6f %%)\n", (char)index , symbol_instance()->freq_rel[index], symbol_instance()->freq_rel[index]*100);
-                }
-                else{
-                    if(symbol_instance()->config.show_fabs) fprintf(stdout, "FA{%ld} = %d\n", index, symbol_instance()->freq_abs[index]);
-                    if(symbol_instance()->config.show_frel) fprintf(stdout, "FR{%ld} = %.6f (%.6f %%)\n", index, symbol_instance()->freq_rel[index], symbol_instance()->freq_rel[index] * 100);
-                }
-        }
-
-        if(symbol_instance()->config.show_fabs && symbol_instance()->config.show_frel)
-            fprintf(stdout, "\n");
-
-    }
-    fprintf(stdout, "----------------------------------------------#\n");
-}
 
 static void reset_symbol() {
 
@@ -244,10 +197,6 @@ static void reset_symbol() {
         for (size_t bit = 0 ; bit < sizeof(uint_t) * 8 ; bit++)
             symbol_instance()->table_code[index][bit] = 0;
     }
-
-    symbol_instance()->config.show_code = False;
-    symbol_instance()->config.show_fabs = True;
-    symbol_instance()->config.show_frel = True;
 
     symbol_instance()->fa_sum = 0;
     symbol_instance()->count = 0;

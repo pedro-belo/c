@@ -22,16 +22,16 @@ struct CMDArgs {
     char *in_filename;
     char *out_filename;
 
-    BOOL _fa;
-    BOOL _fr;
-    BOOL _far;
-    BOOL _ts;
-    BOOL _tf;
-    BOOL _d;
-    BOOL _s;
-    BOOL _c;
-    BOOL _h;
-    BOOL _dbg;
+    BOOL _fa; // Freq abs
+    BOOL _fr; // Freq rel
+    BOOL _ac; // Ascii code
+    BOOL _bc; // Huffman code|Binary code
+    BOOL _hc;  // Hexa code
+    
+    BOOL _h;  // Help
+    BOOL _d;  // Descompress 
+    BOOL _s;  // Symbol
+    BOOL _c;  // Compress
 
 };
 
