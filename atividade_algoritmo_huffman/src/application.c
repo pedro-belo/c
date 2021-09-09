@@ -183,6 +183,8 @@ static void run_decompress(){
 
     create_table_code(th);
 
+    fprintf(stdout, "Descomprimindo:\n%s\n", app_instance()->args.in_filename);
+
     decode(
         th, pn,
         app_instance()->args.out_filename ?

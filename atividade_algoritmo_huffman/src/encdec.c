@@ -16,7 +16,7 @@ void write_meta(FILE *handle){
 
         if(symbol_instance()->freq_abs[index] == 0)
             continue;
-        
+
         BYTE chr = index;
         uint32_t freq = symbol_instance()->freq_abs[index];
 
@@ -28,9 +28,8 @@ void write_meta(FILE *handle){
 
 void write_data(FILE *handle, BYTE *buffer, uint32_t length) {
 
-    BYTE *block = NULL;
     uint64_t copied_bits = 0;
-    uint64_t total_bits = 0; // 32bits x 32bits
+    uint64_t total_bits = 0;
     uint64_t total_bytes = 0;
     uint32_t padding = 0;
 
@@ -45,19 +44,14 @@ void write_data(FILE *handle, BYTE *buffer, uint32_t length) {
     padding = total_bits % 8;
     total_bytes = (uint64_t)((total_bits - padding) / 8) + 1;
 
-    block = (BYTE *)calloc(total_bytes, sizeof(BYTE));
-
     #ifdef DEBUG
-        printf("WRITE_DATA:total_bits=%ld, total_bytes=%ld, padding=%d\n", total_bits, total_bytes, padding);
+        printf("WRITE_DATA:\n\ttotal_bits=%ld,\n\ttotal_bytes=%ld,\n\tpadding=%d\n", total_bits, total_bytes, padding);
     #endif
-
-    if(!block) {
-        fprintf(stdout, "Alocação de memória falhou.");
-        exit(R_ERROR);
-    }
 
     fwrite(&total_bytes, sizeof(uint64_t), 1, handle);
     fwrite(&padding, sizeof(uint32_t), 1, handle);
+
+    BYTE block = 0;
 
     for (uint32_t item = 0; item < length; item++ ) {
 
@@ -66,20 +60,25 @@ void write_data(FILE *handle, BYTE *buffer, uint32_t length) {
 
             for (uint32_t bit = 0; bit < symbol_instance()->total_bits[buffer[item]] ; bit++){
 
-                if(symbol_instance()->table_code[buffer[item]][bit]) {
-                    block[(uint64_t)(copied_bits / 8)] = block[(uint64_t)(copied_bits / 8)] | (BYTE)(1 << (copied_bits % 8));
-                }
+                if(symbol_instance()->table_code[buffer[item]][bit])
+                    block = block | (1 << (copied_bits % 8));
 
                 copied_bits += 1;
+                if(copied_bits % 8 == 0){
+                    fwrite(&block, sizeof(BYTE), 1, handle);
+                    block = 0;                    
+                }
 
             }
     }
 
-    fwrite(block, sizeof(BYTE), total_bytes, handle);
+    if(padding > 0)
+        fwrite(&block, sizeof(BYTE), 1, handle);
 
-    fprintf(stdout, "\nTaxa de compressao:\n%.3f %%\n\n", ((double)total_bytes / length) * 100);
-
-    free(block);
+    fprintf(
+        stdout,
+        "\nTaxa de compressão:\n%.3f %%\n\n",
+        ((double)total_bytes / length) * 100);
 }
 
 void encode(BYTE *buffer, uint32_t length, char *filename){
@@ -191,6 +190,7 @@ void decode(THuffman *th, PNFile *pn, char *filename) {
     FILE *handle = fopen(filename ? filename : default_dcmp_filename, "wb");
 
     uint64_t block_in_bits = ((pn->block_len - 1) * 8) + pn->padding;
+    uint64_t bytes = 0;
 
     for (uint64_t bit = 0; bit < block_in_bits ; bit++ ){
 
@@ -200,15 +200,19 @@ void decode(THuffman *th, PNFile *pn, char *filename) {
 
         if(is_leaf(node)){
             fwrite(&node->label, sizeof(BYTE), 1, handle);
+            bytes += 1;
             node = NULL;
         }
     }
 
     #ifdef DEBUG
-        fprintf(stdout, "\n----[decode]----\n");
-        fprintf(stdout, "block_len=%ld, padding=%d\n", pn->block_len, pn->padding);
-        fprintf(stdout, "----------\n");
+        fprintf(stdout, "DECODE:block_len=%ld, padding=%d\n", pn->block_len, pn->padding);
     #endif
+
+    fprintf(
+        stdout,
+        "\nTaxa de Descompressão:\n%.3f %%\n\n",
+        ((double)pn->block_len/bytes ) * 100);
 
     fclose(handle);
 }

@@ -3,11 +3,9 @@
 #define __H_ENCDEC__
 
 #include <string.h>
-
 #include "./symbol.h"
 #include "./defs.h"
 #include "./list.h"
-#include <string.h>
 
 #define MIN_PN_SIZE 16
 #define MB 1048576
