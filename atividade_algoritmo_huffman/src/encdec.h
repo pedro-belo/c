@@ -10,23 +10,24 @@
 #include <string.h>
 
 #define MIN_PN_SIZE 16
+#define MB 1048576
 
 struct PNFile {
 
     BYTE magic[2];
-    uint_t header_len;
+    uint32_t header_len;
     BYTE *symbol_entry;
 
-    uint_t block_len;
-    uint_t padding;
+    uint64_t block_len;
+    uint32_t padding;
     BYTE *data_entry;
 
 };
 typedef struct PNFile PNFile;
 
-PNFile *new_pn_file(BYTE *buffer, size_t length);
+PNFile *new_pn_file(BYTE *buffer, uint32_t length);
 void load_meta(PNFile *pn);
 void decode(THuffman *th, PNFile *pn, char *filename);
-void encode(BYTE *buffer, size_t length, char *filename);
+void encode(BYTE *buffer, uint32_t length, char *filename);
 BOOL magic_number_is_valid(PNFile *pn);
 #endif

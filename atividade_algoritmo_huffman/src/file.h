@@ -7,5 +7,5 @@
 #include "./defs.h"
 
 long file_length(char *filename);
-BYTE *read_file(char *filename, uint_t *read_len);
+BYTE *read_file(char *filename, uint32_t *read_len);
 #endif

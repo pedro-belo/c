@@ -15,28 +15,28 @@
 struct Symbol{
 
     // Frequência absoluta
-    uint_t freq_abs[FREQ_SZ];
+    uint32_t freq_abs[FREQ_SZ];
 
     // Frequência relativa
     float freq_rel[FREQ_SZ];
 
     // Quantos bits exitem em cada simbolo
-    uint_t total_bits[FREQ_SZ];
+    uint32_t total_bits[FREQ_SZ];
 
     // Tabela de mapeamento bit por símbolo
-    uint_t table_code[FREQ_SZ][sizeof(uint_t) * 8];
+    uint32_t table_code[FREQ_SZ][sizeof(uint32_t) * 8];
 
     // Somatório da frêquencia absoluta
-    uint_t fa_sum;
+    uint32_t fa_sum;
 
     // Quantidade de simbolos
-    uint_t count;
+    uint32_t count;
 
 };
 typedef struct Symbol Symbol;
 
-void create_symbol(BYTE *buffer, uint_t len);
-void set_freq_abs(BYTE symb, uint_t fab);
+void create_symbol(BYTE *buffer, uint32_t len);
+void set_freq_abs(BYTE symb, uint32_t fab);
 Symbol *symbol_instance();
 void symbol_destroy();
 THuffman *grow();

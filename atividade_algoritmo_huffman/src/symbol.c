@@ -21,7 +21,7 @@ Symbol *symbol_instance() {
     return symbol;
 }
 
-void create_symbol(BYTE *buffer, uint_t len) {
+void create_symbol(BYTE *buffer, uint32_t len) {
 
     symbol = (Symbol *)malloc(sizeof(Symbol));
 
@@ -50,7 +50,7 @@ static void load_freq(BYTE *buffer, size_t len) {
     _load_freq_rel();
 }
 
-void set_freq_abs(BYTE symb, uint_t fab) {
+void set_freq_abs(BYTE symb, uint32_t fab) {
 
     if(!has_symbol(symb))
         symbol_instance()->count += 1;
@@ -168,7 +168,8 @@ void create_table_code(THuffman *th){
         int bits = 0;
         node = get_leaf(th, index);
 
-        BOOL leaf_order[sizeof(uint_t) * 8] = {0};
+        BOOL leaf_order[sizeof(uint32_t) * 8] = {0};
+
         for (size_t pos = 0; node != th->root ; pos++ ) {
             leaf_order[pos] = node->edge;
             node = node->father;
@@ -194,7 +195,7 @@ static void reset_symbol() {
         symbol_instance()->freq_rel[index] = 0;
         symbol_instance()->total_bits[index] = 0;
 
-        for (size_t bit = 0 ; bit < sizeof(uint_t) * 8 ; bit++)
+        for (size_t bit = 0 ; bit < sizeof(uint32_t) * 8 ; bit++)
             symbol_instance()->table_code[index][bit] = 0;
     }
 

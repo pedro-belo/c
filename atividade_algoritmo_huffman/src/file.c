@@ -16,7 +16,7 @@ long file_length(char *filename) {
     return length;
 }
 
-BYTE *read_file(char *filename, uint_t *read_len) {
+BYTE *read_file(char *filename, uint32_t *read_len) {
 
     if(!filename)
         return NULL;
@@ -35,7 +35,7 @@ BYTE *read_file(char *filename, uint_t *read_len) {
     }
 
     if(read_len)
-        *read_len = (uint_t)fread(buffer, sizeof(BYTE), length, handle);
+        *read_len = (uint32_t)fread(buffer, sizeof(BYTE), length, handle);
     else
         fread(buffer, sizeof(BYTE), length, handle);
 

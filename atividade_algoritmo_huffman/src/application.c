@@ -77,7 +77,7 @@ static void run_symbol_list(){
         exit(R_ERROR);        
     }
 
-    uint_t length;
+    uint32_t length;
     BYTE *buffer = read_file(app_instance()->args.in_filename, &length);
 
     THuffman *th = NULL;
@@ -114,6 +114,7 @@ static void run_symbol_list(){
 
     print_symbol(symb, freq_abs, freq_rel, ascii_code, huffman_code);
 
+    th->destroy(&th);
     symbol_destroy();
     free(buffer);
 }
@@ -127,7 +128,7 @@ static void run_compress(){
 
     THuffman *th = NULL;
 
-    uint_t length = 0;
+    uint32_t length = 0;
     BYTE *buffer = read_file(app_instance()->args.in_filename, &length);
 
     if(!buffer){
@@ -141,6 +142,8 @@ static void run_compress(){
 
     create_table_code(th);
 
+    fprintf(stdout, "Comprimindo:\n%s\n", app_instance()->args.in_filename);
+    
     encode(
         buffer, length,
         app_instance()->args.out_filename ?
@@ -156,7 +159,7 @@ static void run_decompress(){
     PNFile *pn = NULL;
     THuffman *th = NULL;
 
-    uint_t length = 0;
+    uint32_t length = 0;
     BYTE *buffer = read_file(app_instance()->args.in_filename, &length);
 
     if(!buffer){
@@ -193,13 +196,18 @@ static void run_decompress(){
 static void help_text() {
     fprintf(stdout, "\nCompressão de Huffman – Análise de frequência símbolos e compressão de Huffman\n");
     fprintf(stdout, "Uso: %s [-options] <file>\n", app_instance()->args.exec_filename);
-    fprintf(stdout, "Options:\n");
-    fprintf(stdout, "\t-h Mostra este texto de ajuda\n");
-    fprintf(stdout, "\t-c Realiza a compressão\n");
-    fprintf(stdout, "\t-d Realiza a descompressão\n");
-    fprintf(stdout, "\t-s Realiza apenas a análise de frequência e imprime a tabela de símbolos\n");
-    fprintf(stdout, "\t-f <file> Indica o arquivo a ser processado (comprimido, descomprimido ou para apresentar a tabela de símbolos)\n");
-    fprintf(stdout, "\t-o <filename> Arquvi de saída\n");
+    fprintf(stdout, "\nOptions:\n");
+    fprintf(stdout, "-h Mostra este texto de ajuda\n");
+    fprintf(stdout, "-c Realiza a compressão\n");
+    fprintf(stdout, "-d Realiza a descompressão\n");
+    fprintf(stdout, "-s Realiza apenas a análise de frequência e imprime a tabela de símbolos\n");
+    fprintf(stdout, "\t-fa - Frequência absoluta\n");
+    fprintf(stdout, "\t-fr - Frequência relativa\n");
+    fprintf(stdout, "\t-ac - Código ASCII\n");
+    fprintf(stdout, "\t-bc - Código de Huffman\n");
+    fprintf(stdout, "\t-hc - Código Hexadecimal\n");
+    fprintf(stdout, "-f <arquivo> Indica o arquivo a ser processado (comprimido, descomprimido ou para apresentar a tabela de símbolos)\n");
+    fprintf(stdout, "-o <arquivo> Arquivo de saída\n");
 }
 
 static void read_cmd_args(int argc, char **argv) {

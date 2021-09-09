@@ -10,7 +10,7 @@ struct TNode {
 
     short label;
     BOOL edge;
-    uint_t fr_sum;
+    uint32_t fr_sum;
 
     struct TNode *father,
                  *left, *right;
@@ -29,9 +29,9 @@ struct THuffman {
 typedef struct THuffman THuffman;
 
 THuffman *new_thuffman();
-TNode    *new_node(uint_t fr_sum);
+TNode    *new_node(uint32_t fr_sum);
 TNode    *get_leaf(THuffman *th, BYTE symbol);
-TNode    *get_node_bin(TNode *node, uint_t bit);
+TNode    *get_node_bin(TNode *node, uint32_t bit);
 BOOL      is_leaf(TNode *node);
 
 #endif

@@ -23,7 +23,7 @@ THuffman *new_thuffman(){
     return th;
 }
 
-TNode *new_node(uint_t fr_sum) {
+TNode *new_node(uint32_t fr_sum) {
 
     TNode *node = NULL;
     node = (TNode *)malloc(sizeof(TNode));
@@ -39,7 +39,7 @@ TNode *new_node(uint_t fr_sum) {
     return node;
 }
 
-TNode *get_node_bin(TNode *node, uint_t bit) {
+TNode *get_node_bin(TNode *node, uint32_t bit) {
     return bit > 0 ? node->right : node->left;
 }
 
