@@ -32,16 +32,18 @@ struct Symbol{
     // Quantidade de simbolos
     uint32_t count;
 
+    void (*destroy)(void);
 };
 typedef struct Symbol Symbol;
 
-void create_symbol(BYTE *buffer, uint32_t len);
+Symbol *symbol();
+void symbol_init();
+BOOL has_symbol(BYTE symb);
+void symbol_inc(BYTE symb);
+void update_freq();
+void load_symbol(FILE *handle, uint32_t length);
 void set_freq_abs(BYTE symb, uint32_t fab);
-Symbol *symbol_instance();
-void symbol_destroy();
-THuffman *grow();
 void print_symbol(BOOL symb, BOOL freq_abs, BOOL freq_rel, BOOL ascii_code, BOOL huffman_code);
-void print_short_table_code(THuffman *th);
-void print_full_table_code();
+THuffman *grow();
 void create_table_code(THuffman *th);
 #endif

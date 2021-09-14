@@ -7,8 +7,7 @@
 #include "./defs.h"
 #include "./list.h"
 
-#define MIN_PN_SIZE 16
-#define MB 1048576
+#define MIN_PN_SIZE 18
 
 struct PNFile {
 
@@ -18,14 +17,14 @@ struct PNFile {
 
     uint64_t block_len;
     uint32_t padding;
-    BYTE *data_entry;
 
 };
 typedef struct PNFile PNFile;
 
-PNFile *new_pn_file(BYTE *buffer, uint32_t length);
+PNFile *new_pn_file(FILE *handle, uint32_t length);
 void load_meta(PNFile *pn);
-void decode(THuffman *th, PNFile *pn, char *filename);
-void encode(BYTE *buffer, uint32_t length, char *filename);
+void decode(FILE *decompress, THuffman *th, PNFile *pn, char *filename);
+void encode(FILE *handle, uint32_t length, char *filename);
+void pn_file_destroy(PNFile **pn);
 BOOL magic_number_is_valid(PNFile *pn);
 #endif

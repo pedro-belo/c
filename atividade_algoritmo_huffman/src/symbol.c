@@ -1,87 +1,50 @@
 #include "./symbol.h"
 
-// Prototypes
-static void load_freq(BYTE *buffer, size_t len);
-static void reset_symbol();
-static void _load_freq_abs(BYTE *buffer, size_t len);
-static void _load_freq_rel();
 static void update_symbol_count();
+static void reset_symbol();
+static void update_fa_sum();
+static void update_freq_rel();
+static void destroy();
 
-const BOOL ascii_ext = True;
+static Symbol *_symbol;
 
-static Symbol *symbol;
+void symbol_init() {
 
-Symbol *symbol_instance() {
+    _symbol = (Symbol *)malloc(sizeof(Symbol));
 
-    if(!symbol) {
-        fprintf(stderr, "Incorret Inicialization!\n");
+    if(!_symbol) {
+        fprintf(stderr, "Memória insuficiente.\n");
         exit(R_ERROR);
     }
-
-    return symbol;
-}
-
-void create_symbol(BYTE *buffer, uint32_t len) {
-
-    symbol = (Symbol *)malloc(sizeof(Symbol));
-
-    if(!symbol) {
-        fprintf(stderr, "Inicializacao falhou.\n");
-        exit(R_ERROR);
-    }
+    
+    _symbol->destroy = &destroy;
 
     reset_symbol();
-
-    if(buffer)
-        load_freq(buffer, len);
 }
 
-void symbol_destroy() {
-    free(symbol);
-    symbol = NULL;
+
+Symbol *symbol() {
+
+    if(!_symbol) {
+        fprintf(stderr, "Symbol não foi inicializado\n");
+        exit(R_ERROR);
+    }
+
+    return _symbol;
 }
 
 BOOL has_symbol(BYTE symb) {
-    return symbol_instance()->freq_abs[symb] > 0;
+    return symbol()->freq_abs[symb] > 0;
 }
 
-static void load_freq(BYTE *buffer, size_t len) {
-    _load_freq_abs(buffer, len);
-    _load_freq_rel();
+void symbol_inc(BYTE symb) {
+    symbol()->freq_abs[symb] += 1;
 }
 
-void set_freq_abs(BYTE symb, uint32_t fab) {
-
-    if(!has_symbol(symb))
-        symbol_instance()->count += 1;
-
-    symbol_instance()->fa_sum -= symbol_instance()->freq_abs[symb];
-    symbol_instance()->fa_sum += fab;
-
-    symbol_instance()->freq_abs[symb] = fab;
-    _load_freq_rel();
-}
-
-THuffman *grow() {
-
-    THuffman *th = NULL;
-    TNode *node = NULL;
-    List *list = new_list();
-
-    for (size_t index = 0; index < FREQ_SZ ; index++){
-
-        if(symbol_instance()->freq_abs[index] == 0)
-            continue;
-
-        node = new_node(symbol_instance()->freq_abs[index]);
-        node->label = index;
-        add(list, node);
-    }
-
-    th = build(list);
-
-    free(list);
-    return th;
+void update_freq() {
+    update_fa_sum();
+    update_symbol_count();
+    update_freq_rel();
 }
 
 void print_symbol(BOOL symb, BOOL freq_abs, BOOL freq_rel, BOOL ascii_code, BOOL huffman_code) {   
@@ -104,13 +67,13 @@ void print_symbol(BOOL symb, BOOL freq_abs, BOOL freq_rel, BOOL ascii_code, BOOL
 
     for (size_t index = 0; index < FREQ_SZ ; index++) {
 
-        if(symbol_instance()->freq_abs[index] == 0)
+        if(!has_symbol(index))
             continue;
 
         fprintf(stdout, "|");
         if(symb) fprintf(stdout, "  %#4lx  |", index);
-        if(freq_abs) fprintf(stdout, " %12d |", symbol_instance()->freq_abs[index]);
-        if(freq_rel) fprintf(stdout, "    %4.3f  |", symbol_instance()->freq_rel[index]);
+        if(freq_abs) fprintf(stdout, " %12d |", symbol()->freq_abs[index]);
+        if(freq_rel) fprintf(stdout, "    %4.3f  |", symbol()->freq_rel[index]);
         
         if(ascii_code){
 
@@ -141,8 +104,8 @@ void print_symbol(BOOL symb, BOOL freq_abs, BOOL freq_rel, BOOL ascii_code, BOOL
                 
 
         if(huffman_code){
-            for (size_t bit = 0; bit < symbol_instance()->total_bits[index] ; bit++)
-                printf("%d", symbol_instance()->table_code[index][bit]);            
+            for (size_t bit = 0; bit < symbol()->total_bits[index] ; bit++)
+                printf("%d", symbol()->table_code[index][bit]);            
         } fprintf(stdout, "\n");
 
     }
@@ -156,13 +119,35 @@ void print_symbol(BOOL symb, BOOL freq_abs, BOOL freq_rel, BOOL ascii_code, BOOL
 
 }
 
+THuffman *grow() {
+
+    THuffman *th = NULL;
+    TNode *node = NULL;
+    List *list = new_list();
+
+    for (size_t index = 0; index < FREQ_SZ ; index++){
+
+        if(!has_symbol(index))
+            continue;
+
+        node = new_node(symbol()->freq_abs[index]);
+        node->label = index;
+        add(list, node);
+    }
+
+    th = build(list);
+
+    free(list);
+    return th;
+}
+
 void create_table_code(THuffman *th){
 
     TNode *node = NULL;
 
     for (size_t index = 0; index < FREQ_SZ ; index++ ) {
 
-        if(symbol_instance()->freq_abs[index] == 0)
+        if(!has_symbol(index))
             continue;
 
         int bits = 0;
@@ -176,77 +161,113 @@ void create_table_code(THuffman *th){
             bits += 1;  
         }
 
-        symbol_instance()->total_bits[index] += bits;
+        symbol()->total_bits[index] += bits;
 
         for (size_t bit = bits, pos = 0; bit > 0 ; bit--, pos++ )
-            symbol_instance()->table_code[index][pos] = leaf_order[bit - 1];
+            symbol()->table_code[index][pos] = leaf_order[bit - 1];
 
     }
 
 }
 
-// Static Functions
+
+void load_symbol(FILE *handle, uint32_t length) {
+
+    BYTE *buffer = (BYTE *)malloc(sizeof(BYTE) * BLOCK_SIZE);
+    if(!buffer) {
+        fprintf(stderr, "Memória insuficiente.\n");
+        fclose(handle);
+        exit(R_ERROR);
+    }
+
+    while (length){
+
+        uint32_t bytes_read = (uint32_t)fread(
+            buffer, sizeof(BYTE), BLOCK_SIZE, handle);
+
+        for (uint32_t index = 0; index < bytes_read ; index++ )
+            symbol_inc(buffer[index]);
+
+        length -= bytes_read;
+    }free(buffer);
+
+    update_freq();
+}
+
+void set_freq_abs(BYTE symb, uint32_t fab) {
+
+    if(!has_symbol(symb))
+        symbol()->count += 1;
+
+    symbol()->fa_sum -= symbol()->freq_abs[symb];
+    symbol()->fa_sum += fab;
+
+    symbol()->freq_abs[symb] = fab;
+    update_freq();
+}
+
+// static functions
+static void update_symbol_count() {
+
+    symbol()->count = 0;
+
+    for (size_t index = 0; index < FREQ_SZ ; index++ ){
+
+        if(!has_symbol(index))
+            continue;
+
+        symbol()->count += 1;
+    }
+
+}
 
 static void reset_symbol() {
 
     for (size_t index = 0; index < FREQ_SZ ; index++ ) {
 
-        symbol_instance()->freq_abs[index] = 0;
-        symbol_instance()->freq_rel[index] = 0;
-        symbol_instance()->total_bits[index] = 0;
+        symbol()->freq_abs[index] = 0;
+        symbol()->freq_rel[index] = 0;
+        symbol()->total_bits[index] = 0;
 
         for (size_t bit = 0 ; bit < sizeof(uint32_t) * 8 ; bit++)
-            symbol_instance()->table_code[index][bit] = 0;
+            symbol()->table_code[index][bit] = 0;
     }
 
-    symbol_instance()->fa_sum = 0;
-    symbol_instance()->count = 0;
+    symbol()->fa_sum = 0;
+    symbol()->count = 0;
 
 }
 
-static void _load_freq_abs(BYTE *buffer, size_t len) {
+static void update_fa_sum() {
 
-    symbol_instance()->fa_sum = 0;
+    symbol()->fa_sum = 0;
 
-    for (size_t index = 0; index < len; index++ ){
+    for (size_t index = 0; index < FREQ_SZ ; index++ ){
 
-        if( !ascii_ext && buffer[index] > 127){
-            fprintf(stdout,"Há caracteres nao permitidos.\n");
-            exit(R_ERROR);
-        }
+        if(!has_symbol(index))
+            continue;
 
-        symbol_instance()->freq_abs[buffer[index]] += 1;
-        symbol_instance()->fa_sum += 1;
+        symbol()->fa_sum += symbol()->freq_abs[index];
     }
 
 }
 
-static void _load_freq_rel() {
+static void update_freq_rel() {
 
-    if(symbol_instance()->fa_sum == 0)
+    if(symbol()->fa_sum == 0)
         return;
 
     for (size_t index = 0; index < FREQ_SZ ; index++ ){
 
-        if(symbol_instance()->freq_abs[index] == 0)
+        if(!has_symbol(index))
             continue;
 
-        symbol_instance()->freq_rel[index] = (float)symbol_instance()->freq_abs[index] / symbol_instance()->fa_sum;
+        symbol()->freq_rel[index] = (float)symbol()->freq_abs[index] / symbol()->fa_sum;
     }
 
-    update_symbol_count();
 }
 
-static void update_symbol_count() {
-
-    symbol_instance()->count = 0;
-
-    for (size_t index = 0; index < FREQ_SZ ; index++ ){
-
-        if(symbol_instance()->freq_abs[index] == 0)
-            continue;
-
-        symbol_instance()->count += 1;
-    }
-
+static void destroy() {
+    free(_symbol);
+    _symbol = NULL;
 }
