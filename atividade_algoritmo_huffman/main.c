@@ -8,19 +8,19 @@ int main(int argc, char **argv) {
     switch(get_option()) {
 
         case SYMBOLS_LIST:
-            app_instance()->run_symbol_list();
+            app()->run_symbol_list();
             break;
 
         case COMPRESS:
-            app_instance()->run_compress();
+            app()->run_compress();
             break;
 
         case DECOMPRESS:
-            app_instance()->run_decompress();
+            app()->run_decompress();
             break;
 
         case HELP:
-            app_instance()->run_help();
+            app()->run_help();
             break;
 
         default:

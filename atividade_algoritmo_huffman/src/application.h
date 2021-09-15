@@ -47,7 +47,7 @@ struct Application {
 typedef struct Application Application;
 
 Application *initialize(int argc, char **argv);
-Application *app_instance();
+Application *app();
 int get_option();
 
 #endif

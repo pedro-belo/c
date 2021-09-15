@@ -22,7 +22,6 @@ struct List {
 typedef struct List List;
 
 List *new_list();
-void destroy(List **list);
 void sort(List *list);
 TNode *rem(List *list);
 int is_empty(List *list);

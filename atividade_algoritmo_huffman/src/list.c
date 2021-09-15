@@ -71,6 +71,11 @@ THuffman *build(List *list) {
     TNode *n1, *n2, *new;
     n1 = n2 = new = NULL;
 
+    if(!list->items->next) {
+        n1 = list->items->node;
+        n1->edge = 0;
+    }
+
     while(list->items->next){
 
         n1 = rem(list);

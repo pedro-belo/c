@@ -15,30 +15,3 @@ long file_length(char *filename) {
     fclose(handle);
     return length;
 }
-
-BYTE *read_file(char *filename, uint32_t *read_len) {
-
-    if(!filename)
-        return NULL;
-
-    long length = file_length(filename);
-    if(length < 1)
-        return NULL;
-
-    FILE *handle = fopen(filename, "rb");
-    if(!handle) return NULL;
-
-    BYTE *buffer = (BYTE *)malloc(sizeof(BYTE) * length);
-    if(!buffer){
-        fclose(handle);
-        return NULL;
-    }
-
-    if(read_len)
-        *read_len = (uint32_t)fread(buffer, sizeof(BYTE), length, handle);
-    else
-        fread(buffer, sizeof(BYTE), length, handle);
-
-    fclose(handle);
-    return buffer;
-}

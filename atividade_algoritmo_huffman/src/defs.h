@@ -2,9 +2,11 @@
 
 #define __H_DEFS__
 
-// #define DEBUG
+#define DEBUG
 
 #define MAX_FILE_SIZE 4294967296
+
+#define BLOCK_SIZE 52428800
 
 #define R_ERROR -1
 #define R_SUCCESS 0
