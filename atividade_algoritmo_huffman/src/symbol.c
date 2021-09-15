@@ -145,6 +145,12 @@ void create_table_code(THuffman *th){
 
     TNode *node = NULL;
 
+    if(is_leaf(th->root)) {
+        symbol()->table_code[th->root->label][0] = 0;
+        symbol()->total_bits[th->root->label] = 1;
+        return;
+    }
+
     for (size_t index = 0; index < FREQ_SZ ; index++ ) {
 
         if(!has_symbol(index))
@@ -163,8 +169,9 @@ void create_table_code(THuffman *th){
 
         symbol()->total_bits[index] += bits;
 
-        for (size_t bit = bits, pos = 0; bit > 0 ; bit--, pos++ )
+        for (size_t bit = bits, pos = 0; bit > 0 ; bit--, pos++ ){
             symbol()->table_code[index][pos] = leaf_order[bit - 1];
+        }
 
     }
 

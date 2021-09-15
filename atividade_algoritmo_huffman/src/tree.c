@@ -34,6 +34,7 @@ TNode *new_node(uint32_t fr_sum) {
     node->edge = -1;
     node->label = -1;
     node->left = node->right = NULL;
+    node->father = NULL;
     node->fr_sum = fr_sum;
 
     return node;
@@ -48,6 +49,10 @@ BOOL is_leaf(TNode *node) {
 }
 
 TNode *get_leaf(THuffman *th, BYTE symbol){
+
+    if(is_leaf(th->root) && th->root->label == symbol)
+        return th->root;
+
     return _get_leaf(th->root, symbol);
 }
 

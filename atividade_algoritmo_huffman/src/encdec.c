@@ -26,7 +26,7 @@ void write_meta(FILE *handle){
 
  }
 
-void write_data(FILE *handle, FILE *output, uint32_t length) {
+void write_data(FILE *compress, FILE *output, uint32_t length) {
 
     uint64_t copied_bits = 0;
     uint64_t total_bits = 0;
@@ -46,7 +46,10 @@ void write_data(FILE *handle, FILE *output, uint32_t length) {
     total_bytes = (uint64_t)((total_bits - padding) / 8) + 1;
 
     #ifdef DEBUG
-        printf("WRITE_DATA:\n\ttotal_bits=%ld,\n\ttotal_bytes=%ld,\n\tpadding=%d\n", total_bits, total_bytes, padding);
+        printf("WRITE_DATA:\n\ttotal_bits=%ld,\n\ttotal_bytes=%ld,\n\tpadding=%d\n",
+            total_bits,
+            total_bytes,
+            padding);
     #endif
 
     fwrite(&total_bytes, sizeof(uint64_t), 1, output);
@@ -56,32 +59,26 @@ void write_data(FILE *handle, FILE *output, uint32_t length) {
 
     BYTE block = 0;
     while(copied_bits < total_bits){
-        
-        while (length) {
-                
-            uint32_t bytes_read = fread(buffer, sizeof(BYTE), BLOCK_SIZE, handle);
-            length -= bytes_read;
 
-            for (uint32_t i = 0; i < bytes_read; i++ ) {
+        uint32_t bytes_read = fread(buffer, sizeof(BYTE), BLOCK_SIZE, compress);
 
-                for (uint32_t bit = 0; bit < symbol()->total_bits[buffer[i]] ; bit++){
+        for (uint32_t index = 0; index < bytes_read; index++ ) {
 
-                    if(symbol()->table_code[buffer[i]][bit])
-                        block = block | (1 << (copied_bits % 8));
+            for (uint32_t bit = 0; bit < symbol()->total_bits[buffer[index]] ; bit++){
 
-                    copied_bits += 1;
+                block = block | (symbol()->table_code[buffer[index]][bit] << (copied_bits % 8));
 
-                    if(copied_bits % 8 == 0){
-                        fwrite(&block, sizeof(BYTE), 1, output);
-                        block = 0;                    
-                    }
+                copied_bits += 1;
 
+                if(copied_bits % 8 == 0){
+                    printf("_");
+                    fwrite(&block, sizeof(BYTE), 1, output);
+                    block = 0;                    
                 }
 
             }
 
-        }        
-
+        }
     }
 
     if(padding > 0)
@@ -214,24 +211,24 @@ void decode(FILE *decompress, THuffman *th, PNFile *pn, char *filename) {
     uint64_t block_in_bits = (pn->block_len - 1) * 8;
     uint64_t total_bits = block_in_bits + pn->padding;
     uint64_t copied_bits = 0;
-
-    node = th->root;
+print_symbol(True,True,True,True,True);
     while (copied_bits < total_bits) {
 
         uint32_t read_bytes = fread(buffer, sizeof(BYTE), BLOCK_SIZE, decompress);
 
         for (uint32_t index = 0; index < read_bytes; index++){
 
-            uint32_t bits = copied_bits >= block_in_bits ? pn->padding : 8;
+            uint32_t bits = (copied_bits >= block_in_bits) ? pn->padding : 8;
 
             for (size_t bit = 0; bit < bits; bit++){
 
                 BOOL is_high = (buffer[index] & (1 << bit)) > 0 ? True : False;
-                node = get_node_bin(node, is_high);
+
+                node = !is_leaf(th->root) ? get_node_bin(!node ? th->root : node, is_high) : th->root;
 
                 if(is_leaf(node)){
                     fwrite(&node->label, sizeof(BYTE), 1, output);
-                    node = th->root;
+                    node = NULL;
                 }
 
                 copied_bits += 1;
