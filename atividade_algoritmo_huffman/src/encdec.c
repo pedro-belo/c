@@ -71,7 +71,6 @@ void write_data(FILE *compress, FILE *output, uint32_t length) {
                 copied_bits += 1;
 
                 if(copied_bits % 8 == 0){
-                    printf("_");
                     fwrite(&block, sizeof(BYTE), 1, output);
                     block = 0;                    
                 }
@@ -211,7 +210,7 @@ void decode(FILE *decompress, THuffman *th, PNFile *pn, char *filename) {
     uint64_t block_in_bits = (pn->block_len - 1) * 8;
     uint64_t total_bits = block_in_bits + pn->padding;
     uint64_t copied_bits = 0;
-print_symbol(True,True,True,True,True);
+
     while (copied_bits < total_bits) {
 
         uint32_t read_bytes = fread(buffer, sizeof(BYTE), BLOCK_SIZE, decompress);
